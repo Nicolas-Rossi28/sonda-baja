@@ -1,17 +1,15 @@
-#include <Wire.h>                 // NOVO: Biblioteca para comunicação I2C
-#include <Adafruit_GFX.h>         // NOVO: Biblioteca principal para gráficos
-#include <Adafruit_SSD1306.h>     // NOVO: Biblioteca para o driver do display OLED
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 // --- Configurações do Display OLED ---
-#define SCREEN_WIDTH 128          // NOVO: Largura do display em pixels
-#define SCREEN_HEIGHT 64          // NOVO: Altura do display em pixels
-#define OLED_RESET -1             // NOVO: Pino de reset (-1 se compartilhar o pino de reset do Arduino)
-#define SCREEN_ADDRESS 0x3C       // NOVO: Endereço I2C do display (pode ser 0x3D em alguns modelos)
-
-// NOVO: Cria o objeto 'display' usando as configurações acima
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+#define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// --- Variáveis da Sonda Lambda (seu código original) ---
+// --- Variáveis da Sonda Lambda ---
 const int adcPin = A0;
 float voltage = 0;
 bool sondaPronta = false;
@@ -22,85 +20,76 @@ const float limiteSuperior = 0.9;
 void setup() {
   Serial.begin(115200);
 
-  // NOVO: Inicializa o display OLED
+  // Inicializa o display OLED
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("Falha ao iniciar o display OLED"));
     for (;;); // Loop infinito em caso de falha
   }
-  display.clearDisplay(); // Limpa o buffer do display
-  display.display();      // Envia o buffer limpo para a tela
+
+  // Exibe mensagem de boas-vindas
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(10, 20);
+  display.println("Sonda");
+  display.setCursor(10, 40);
+  display.println("Case Jusepe");
+  display.display();
+  delay(2000);  // Mostra a tela por 2 segundos
+
+  display.clearDisplay();
+  display.display();
 }
 
 void loop() {
   int raw = analogRead(adcPin);
-  voltage = raw * (1.0 / 1023.0); // ESP8266 ADC: 10 bits, máx 1.0V
+  voltage = raw * (1.0 / 1023.0); // ESP8266 ADC: 10 bits, faixa de 0 a 1.0V
 
-  // Lógica para verificar se a sonda está pronta (seu código original)
-  if (voltage >= limiteInferior && voltage <= limiteSuperior) {
-    if (!sondaPronta && millis() - tempoEstavel > 3000) {
       sondaPronta = true;
       Serial.println("✅ Sonda lambda PRONTA para leitura!");
-    }
-  } else {
-    tempoEstavel = millis();
-    sondaPronta = false;
-  }
 
-  // NOVO: Limpa a tela a cada atualização para não sobrepor o texto
+
+  // Limpa display para nova atualização
   display.clearDisplay();
-  
-  // NOVO: Define o tamanho e a cor do texto
   display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-
-  // NOVO: Posiciona o cursor para a primeira linha
+  display.setTextColor(WHITE);
   display.setCursor(0, 0);
 
   if (sondaPronta) {
-    // ---- Imprime na Serial (seu código original) ----
-    Serial.print("Tensão da Sonda: ");
+    // Serial
+    Serial.print("Tensao: ");
     Serial.print(voltage, 3);
     Serial.print(" V -> Mistura: ");
 
-    // ---- Desenha no Display OLED ----
-    // NOVO: Imprime a tensão na primeira linha do display
+    // Display: mostra tensão
     display.print("Tensao: ");
     display.print(voltage, 3);
     display.println(" V");
-    display.println(""); // Pula uma linha
 
-    // NOVO: Define um texto maior para o status da mistura
+    // Display: mostra classificação da mistura
     display.setTextSize(2);
-    display.setCursor(0, 20); // Posiciona o cursor mais para baixo
+    display.setCursor(0, 20);
 
-    // Lógica para definir a mensagem de mistura
     if (voltage > 0.75) {
-      Serial.println("Muito Rica");
+      Serial.println("🔥 Muito Rica");
       display.println("MUITO RICA");
     } else if (voltage > 0.60) {
-      Serial.println("Rica");
+      Serial.println("🔥 Rica");
       display.println("RICA");
     } else if (voltage > 0.45) {
-      Serial.println("Moderada (Estequiométrica)");
+      Serial.println("⚖️ Estequiométrica");
       display.println("IDEAL");
     } else if (voltage > 0.30) {
-      Serial.println("Pobre");
+      Serial.println("❄️ Pobre");
       display.println("POBRE");
     } else {
-      Serial.println("Muito Pobre");
+      Serial.println("❄️ Muito Pobre");
       display.println("MUITO POBRE");
     }
-  } else {
-    Serial.println("⏳ Aguardando sonda aquecer...");
 
-    // NOVO: Exibe mensagem de "aquecendo" no display
-    display.setTextSize(2);
-    display.setCursor(10, 20);
-    display.println("AQUECENDO");
-  }
+  } 
 
-  // NOVO: Envia tudo o que foi desenhado no buffer para a tela do display. ESSENCIAL!
-  display.display();
-
+  display.display(); // Atualiza o display com o conteúdo do buffer
   delay(250);
 }
+
