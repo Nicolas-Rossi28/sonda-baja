@@ -75,19 +75,19 @@ void loop() {
 
     // Lógica para definir a mensagem de mistura
     if (voltage > 0.75) {
-      Serial.println("🔥 Muito Rica");
+      Serial.println("Muito Rica");
       display.println("MUITO RICA");
     } else if (voltage > 0.60) {
-      Serial.println("🔥 Rica");
+      Serial.println("Rica");
       display.println("RICA");
     } else if (voltage > 0.45) {
-      Serial.println("⚖️ Moderada (Estequiométrica)");
+      Serial.println("Moderada (Estequiométrica)");
       display.println("IDEAL");
     } else if (voltage > 0.30) {
-      Serial.println("❄️ Pobre");
+      Serial.println("Pobre");
       display.println("POBRE");
     } else {
-      Serial.println("❄️ Muito Pobre");
+      Serial.println("Muito Pobre");
       display.println("MUITO POBRE");
     }
   } else {
