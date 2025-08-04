@@ -2,24 +2,26 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
+#include <WebServer.h>
 
 // --- Display OLED ---
 #define SCREEN_WIDTH 128
+#define SDA_PIN 21 // OLED
+#define SCL_PIN 22 // OLED
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // --- HX711 ---
-#define DT D6   // GPIO12
-#define SCK D5  // GPIO14
+#define DT 18   // GPIO18
+#define SCK 19  // GPIO19
 HX711 scale;
 
 // --- Wi-Fi (modo Access Point) ---
-const char* ssid = "Sonda_Jusepe";
-const char* password = "12345678";
-ESP8266WebServer server(80);
+const char* ssid = "Sonda_Imperador";
+const char* password = "saebaja";
+WebServer server(80);
 
 // --- Variáveis ---
 float entrada_mv = 0;
