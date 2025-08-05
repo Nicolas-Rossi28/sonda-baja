@@ -1,0 +1,117 @@
+#include <HX711.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <WiFi.h>
+#include <WebServer.h>
+
+// --- Display OLED ---
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// --- HX711 ---
+const int DT = 16;   // GPIO para DT (ajuste conforme seu cabo)
+const int SCK = 4;   // GPIO para SCK
+HX711 scale;
+
+// --- WiFi em modo Estação ---
+const char* ssid = "SEU_SSID";        // coloque o nome da rede do celular
+const char* password = "SUA_SENHA";   // senha da rede Wi-Fi roteada do celular
+WebServer server(80);
+
+// --- Variáveis ---
+float entrada_mv = 0;
+String classificacao = "";
+
+void setup(){
+  Serial.begin(115200);
+  delay(500);
+
+  // Display OLED
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("Erro no display OLED");
+    while (true);
+  }
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(10,20);
+  display.println("Sonda");
+  display.display();
+  delay(2000);
+
+  // HX711
+  scale.begin(DT, SCK);
+  scale.set_gain(128);
+  // opcional: calibrar com set_scale e tare
+
+  // Conectar na rede WiFi do celular (modo estação)
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando à WiFi ");
+  Serial.print(ssid);
+  Serial.println(" ...");
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 20000) {
+    delay(500);
+    Serial.print(".");
+  }
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi conectado!");
+    Serial.print("IP recebido: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nFalha ao conectar WiFi.");
+  }
+
+  // Inicializa servidor web
+  server.on("/", [](){
+    String html = "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='1'>";
+    html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    html += "</head><body>";
+    html += "<h1>Sonda Lambda</h1>";
+    html += "<p>Tensão: " + String(entrada_mv, 2) + " mV</p>";
+    html += "<p>Mistura: " + classificacao + "</p>";
+    html += "</body></html>";
+    server.send(200, "text/html", html);
+  });
+
+  if (WiFi.status() == WL_CONNECTED) {
+    server.begin();
+    Serial.println("Servidor web iniciado.");
+  } else {
+    Serial.println("Servidor web NÃO iniciado pois WiFi não conectou.");
+  }
+}
+
+void loop(){
+  if (WiFi.status() == WL_CONNECTED) {
+    server.handleClient();
+  }
+
+  if (scale.is_ready()) {
+    long leitura = scale.read();
+    entrada_mv = (leitura / 8388607.0) * 1200.0 * 0.0123;
+    if (entrada_mv > 5.7) classificacao = "Rica";
+    else if (entrada_mv >= 3.5) classificacao = "Ideal";
+    else classificacao = "Pobre";
+    Serial.printf("Tensão: %.2f mV -> %s\n", entrada_mv, classificacao.c_str());
+  } else {
+    Serial.println("HX711 não está pronto");
+    entrada_mv = 0;
+    classificacao = "Erro";
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.printf("Tensão: %.2f mV\n", entrada_mv);
+  display.setTextSize(2);
+  display.setCursor(0,20);
+  display.println(classificacao);
+  display.display();
+
+  delay(300);
+}
