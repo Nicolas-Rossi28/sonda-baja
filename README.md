@@ -1,7 +1,6 @@
-# 🚗 Sonda Lambda Reader - Baja SAE (ESP12E + HX711 + OLED + Wi-Fi)
-
+# 🚗 Sonda Lambda Reader - Baja SAE
 Projeto desenvolvido para o desafio de eletrônica do Baja SAE, UTFPR Curitiba – Equipe Imperador.  
-Este sistema permite a leitura da sonda lambda narrowband com saída de 1–9 mV, utilizando um amplificador HX711, visualização local em um display OLED 128x64 e monitoramento remoto via servidor Wi-Fi embutido no ESP12E.
+Este sistema permite a leitura da sonda lambda narrowband com saída de 1–9 mV, utilizando um amplificador HX711
 
 ---
 
@@ -10,7 +9,7 @@ Este sistema permite a leitura da sonda lambda narrowband com saída de 1–9 
 ### ✅ Hardware
 - ESP8266 ESP-12E (NodeMCU)
 - Módulo HX711 (24-bit ADC)
-- Display OLED 128x64 (I2C)
+- Display OLED 128x64 (I2C) (opcional)
 - Sonda lambda Gauss GO9460 (ou equivalente narrowband)
 - Fonte 12V (bateria) + regulador 5V (ex: L298N)
 
@@ -45,20 +44,20 @@ http://arduino.esp8266.com/stable/package_esp8266com_index.json
 Instale as seguintes bibliotecas em **Sketch > Incluir Biblioteca > Gerenciar Bibliotecas...**:
 
 - **HX711** (por Bogde)
-- **Adafruit GFX Library**
-- **Adafruit SSD1306**
-- **ESP8266WiFi**
-- **ESP8266WebServer**
+- **Adafruit GFX Library** (opcional)
+- **Adafruit SSD1306** (opcional)
+- **ESP8266WiFi** (opcional)
+- **ESP8266WebServer** (opcional)
 
 ---
 
 ## 📡 Funcionalidade
 
-- O ESP cria um ponto de acesso Wi-Fi:  
+- O ESP cria um ponto de acesso Wi-Fi:  (opcional)
 **SSID:** `Sonda_Jusepe`  
 **Senha:** `12345678`
 
-- Acesse via navegador no celular conectado ao Wi-Fi:  
+- Acesse via navegador no celular conectado ao Wi-Fi:  (opcional)
 [http://192.168.4.1](http://192.168.4.1)
 
 - A página exibirá:
