@@ -3,19 +3,17 @@
 #include <HX711.h>
 
 // --- HX711 ---
-// Pinos definidos para ESP32. DT e SCK são os da sua sonda.
 #define DT 33 
 #define SCK 32 
 
 // --- Configuração do ESP-NOW ---
-// Endereço MAC do ESP32 receptor (precisa ser alterado para o MAC do seu receptor)
 uint8_t broadcastAddress[] = {0x34, 0x5F, 0x45, 0xE7, 0x6D, 0x44}; 
 
 // Estrutura para os dados a serem enviados
 typedef struct message {
   unsigned long timestamp;
   float entrada_mv;
-  String classificacao;
+  char classificacao[20]; // Alterado para um array de caracteres
 } message;
 
 message dataSonda;
@@ -24,7 +22,7 @@ HX711 scale;
 
 // --- Variáveis ---
 float entrada_mv = 0;
-String classificacao = "";
+String classificacao_str = ""; // Nome da variável alterado para evitar conflito
 
 // Função para monitorar o status do envio
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -34,20 +32,14 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 
 void setup() {
   Serial.begin(115200);
-
-  // Inicializa o WiFi em modo Station
   WiFi.mode(WIFI_STA);
 
-  // Inicializa o ESP-NOW
   if (esp_now_init() != ESP_OK) {
     Serial.println("Erro ao inicializar ESP-NOW");
     return;
   }
-
-  // Registra a função de callback para o status de envio
   esp_now_register_send_cb(OnDataSent);
 
-  // Configura e adiciona o receptor (peer)
   memcpy(peerInfo.peer_addr, broadcastAddress, 6);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
@@ -56,7 +48,6 @@ void setup() {
     return;
   }
 
-  // Inicializa o HX711
   scale.begin(DT, SCK);
   scale.set_gain(128);
 
@@ -67,42 +58,38 @@ void setup() {
 void loop() {
   if (scale.is_ready()) {
     long leitura = scale.read();
-
-    // Calibração
     entrada_mv = (leitura / 8388607.0) * 1200.0 * 0.0123;
 
-    // Classificação
     if (entrada_mv > 5.7) {
-      classificacao = "Rica";
+      classificacao_str = "Rica";
     } else if (entrada_mv >= 3.5) {
-      classificacao = "Ideal";
+      classificacao_str = "Ideal";
     } else {
-      classificacao = "Pobre";
+      classificacao_str = "Pobre";
     }
 
-    // Preenche a estrutura com os dados
     dataSonda.timestamp = millis();
     dataSonda.entrada_mv = entrada_mv;
     
-    // Converte a String para um array de bytes para enviar no ESP-NOW
-    char classificacao_char[classificacao.length() + 1];
-    classificacao.toCharArray(classificacao_char, classificacao.length() + 1);
-
-    // Envia os dados
+    // Copia a String para o array de caracteres na struct
+    classificacao_str.toCharArray(dataSonda.classificacao, sizeof(dataSonda.classificacao));
+    
+    if (entrada_mv > 0.9){
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &dataSonda, sizeof(dataSonda));
+    
 
-    if (result == ESP_OK) {
-      Serial.println("Dados enviados com sucesso!");
-    } else {
-      Serial.println("Erro ao enviar os dados!");
+      if (result == ESP_OK) {
+       Serial.println("Dados enviados com sucesso!");
+      } else {
+       Serial.println("Erro ao enviar os dados!");
+     }
     }
 
-    // Saída serial para monitoramento
     if (entrada_mv > 0.9) {
       Serial.print("Tensao (mV): ");
       Serial.print(entrada_mv, 2);
       Serial.print(" | Mistura: ");
-      Serial.println(classificacao);
+      Serial.println(classificacao_str);
     }
   }
   delay(300);
